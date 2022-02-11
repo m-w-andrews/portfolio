@@ -1,0 +1,80 @@
+//////////////////////////////////////////////Inputs////////////////////////////////////////////////////////
+var era5 = ee.ImageCollection("ECMWF/ERA5/DAILY");
+var BRA = ee.FeatureCollection("users/mwandrew/Brazil_Municipalities");
+/*
+var TEST = era5.select(['maximum_2m_air_temperature','minimum_2m_air_temperature','dewpoint_2m_temperature','total_precipitation']);
+
+      var daily = TEST.first().reduceRegions({ //Reduce
+        'reducer': ee.Reducer.mean(),
+        'collection': BRA.filterMetadata('CD_GEOCMU','equals','2209302'),
+        'scale': 30000
+      });
+      daily = daily.map(function(f) { 
+        return f.set('date', TEST.first().id());
+      });
+print('TEST',daily);
+*/
+ 
+
+
+var era5_temp = era5.select(['maximum_2m_air_temperature','minimum_2m_air_temperature','dewpoint_2m_temperature','total_precipitation']);
+
+  for (var year = 2003; year <= 2019; year++) { //Year
+    var images_year = era5_temp.filter(ee.Filter.calendarRange(year,year,'year'));
+    for (var month = 1; month <= 12; month++) { //Month
+      var images_month = images_year.filter(ee.Filter.calendarRange(month,month, 'month'));
+      var daynum = images_month.size().getInfo(); //Calculate Number of Days in Month for Daily Loop
+      for (var day = 1; day <= daynum; day++) { //Day
+        var images_daily = images_month.filter(ee.Filter.calendarRange(day,day, 'day_of_month'));
+        var daily = images_daily.first().reduceRegions({ //Reduce Regions
+          'reducer': ee.Reducer.mean(),
+          'collection': BRA,
+          'scale': 30000
+        });
+        Export.table.toDrive({
+          collection: daily,
+          description: 'BRA' + '_' + year + '_' + month + '_' + day,
+          folder: 'Robinson Brazil Output',
+          fileFormat: "CSV",
+          selectors: ['CD_GEOCMU','maximum_2m_air_temperature','minimum_2m_air_temperature','dewpoint_2m_temperature','total_precipitation']
+        });
+      }
+    }
+  }
+
+
+
+/*
+// Batch Run Code: Press F12 and paste in Chrome's console
+function runTaskList() {
+
+    //1. task local type-EXPORT_FEATURES awaiting-user-config
+
+    //2. task local type-EXPORT_IMAGE awaiting-user-config
+
+    var tasklist = document.getElementsByClassName('awaiting-user-config');
+
+    for (var i = 0; i < tasklist.length; i++)
+
+        tasklist[i].children[2].click();
+
+}
+
+// confirmAll();
+
+function confirmAll() {
+
+    var ok = document.getElementsByClassName('goog-buttonset-default goog-buttonset-action');
+
+    for (var i = 0; i < ok.length; i++)
+
+        ok[i].click();
+
+}
+
+ 
+
+runTaskList();
+
+confirmAll();
+*/

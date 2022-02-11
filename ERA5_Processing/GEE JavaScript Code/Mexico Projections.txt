@@ -1,0 +1,63 @@
+//////////////////////////////////////////////Inputs////////////////////////////////////////////////////////
+var nex = ee.ImageCollection("NASA/NEX-GDDP").filterMetadata('model','equals','CCSM4').filterMetadata('scenario','not_equals','rcp45');
+var MEX = ee.FeatureCollection("users/gmccord/Data/MEX_municipality");
+
+  for (var year = 1998; year <= 1998; year++) { // Enter desired years 
+    var images_year = nex.filter(ee.Filter.calendarRange(year,year,'year'));
+    for (var month = 1; month <= 12; month++) { // Enter desired month range
+      var images_month = images_year.filter(ee.Filter.calendarRange(month,month, 'month'));
+      var daynum = images_month.size().getInfo(); //Calculate Number of Days in Month for Daily Loop
+      for (var day = 1; day <= daynum; day++) { //Day
+        var images_daily = images_month.filter(ee.Filter.calendarRange(day,day, 'day_of_month'));
+        var daily = images_daily.first().reduceRegions({ //Reduce Regions
+          'reducer': ee.Reducer.mean(),
+          'collection': MEX,
+          'scale': 30000
+        });
+        Export.table.toDrive({
+          collection: daily,
+          description: 'MEX_Proj' + '_' + year + '_' + month + '_' + day,
+          folder: 'Robinson Mexico Projection Output',
+          fileFormat: "CSV",
+          selectors: ['CVE_MUN','tasmin','tasmax','pr']
+        });
+      }
+    }
+  }
+
+
+
+/*
+// Batch Run Code: Press F12 and paste in Chrome's console
+function runTaskList() {
+
+    //1. task local type-EXPORT_FEATURES awaiting-user-config
+
+    //2. task local type-EXPORT_IMAGE awaiting-user-config
+
+    var tasklist = document.getElementsByClassName('awaiting-user-config');
+
+    for (var i = 0; i < tasklist.length; i++)
+
+        tasklist[i].children[2].click();
+
+}
+
+// confirmAll();
+
+function confirmAll() {
+
+    var ok = document.getElementsByClassName('goog-buttonset-default goog-buttonset-action');
+
+    for (var i = 0; i < ok.length; i++)
+
+        ok[i].click();
+
+}
+
+ 
+
+runTaskList();
+
+confirmAll();
+*/
